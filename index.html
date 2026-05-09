@@ -1,0 +1,816 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Игра: нарисуй график — регулирование конкурентного рынка</title>
+  <style>
+    :root{
+      --bg:#0f172a;
+      --panel:#111827;
+      --panel2:#1f2937;
+      --card:#ffffff;
+      --text:#f8fafc;
+      --muted:#cbd5e1;
+      --accent:#7c3aed;
+      --accent2:#22c55e;
+      --danger:#ef4444;
+      --warn:#f59e0b;
+      --line:#0f172a;
+      --grid:#e5e7eb;
+      --soft:#f8fafc;
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      font-family:Arial, Helvetica, sans-serif;
+      background: radial-gradient(circle at top left, #312e81 0, #0f172a 38%, #020617 100%);
+      color:var(--text);
+      min-height:100vh;
+    }
+    .wrap{max-width:1280px;margin:0 auto;padding:22px}
+    .hero{
+      background:linear-gradient(135deg, rgba(124,58,237,.92), rgba(14,165,233,.72));
+      border:1px solid rgba(255,255,255,.18);
+      border-radius:28px;
+      padding:22px;
+      box-shadow:0 20px 60px rgba(0,0,0,.30);
+      margin-bottom:18px;
+      position:relative;
+      overflow:hidden;
+    }
+    .hero::after{
+      content:"";
+      position:absolute;
+      right:-90px;top:-90px;width:260px;height:260px;
+      border-radius:50%;
+      background:rgba(255,255,255,.12);
+    }
+    h1{margin:0 0 8px;font-size:clamp(26px,3vw,44px);line-height:1.05}
+    .subtitle{margin:0;color:#eef2ff;font-size:17px;max-width:960px}
+    .topbar{
+      display:grid;
+      grid-template-columns: 1.2fr .8fr .8fr .8fr;
+      gap:12px;
+      margin:18px 0;
+    }
+    .box{
+      background:rgba(15,23,42,.78);
+      border:1px solid rgba(255,255,255,.12);
+      border-radius:20px;
+      padding:14px;
+      box-shadow:0 12px 34px rgba(0,0,0,.22);
+    }
+    label{display:block;color:var(--muted);font-size:13px;margin-bottom:7px}
+    input, select{
+      width:100%;
+      border:1px solid rgba(255,255,255,.18);
+      background:#020617;
+      color:white;
+      border-radius:14px;
+      padding:12px 13px;
+      outline:none;
+      font-size:16px;
+    }
+    button{
+      border:0;
+      border-radius:14px;
+      padding:12px 16px;
+      font-weight:700;
+      cursor:pointer;
+      color:white;
+      background:var(--accent);
+      transition:.15s transform,.15s opacity,.15s background;
+      user-select:none;
+    }
+    button:hover{transform:translateY(-1px)}
+    button:disabled{opacity:.45;cursor:not-allowed;transform:none}
+    .btnrow{display:flex;gap:9px;flex-wrap:wrap;align-items:center}
+    .btn-green{background:var(--accent2);color:#052e16}
+    .btn-red{background:var(--danger)}
+    .btn-warn{background:var(--warn);color:#111827}
+    .btn-dark{background:#334155}
+    .btn-light{background:#e5e7eb;color:#111827}
+    .main{
+      display:grid;
+      grid-template-columns: 1.15fr .85fr;
+      gap:18px;
+      align-items:start;
+    }
+    .question-card{
+      background:rgba(17,24,39,.88);
+      border:1px solid rgba(255,255,255,.12);
+      border-radius:26px;
+      padding:18px;
+      box-shadow:0 20px 60px rgba(0,0,0,.30);
+    }
+    .qhead{
+      display:flex;
+      align-items:flex-start;
+      justify-content:space-between;
+      gap:14px;
+      margin-bottom:12px;
+    }
+    .badge{
+      display:inline-flex;
+      align-items:center;
+      gap:7px;
+      border-radius:999px;
+      background:rgba(124,58,237,.20);
+      border:1px solid rgba(167,139,250,.45);
+      color:#ddd6fe;
+      padding:8px 12px;
+      font-size:13px;
+      white-space:nowrap;
+    }
+    .question-title{font-size:22px;font-weight:800;margin:0 0 8px}
+    .question-text{font-size:18px;color:#e2e8f0;margin:0 0 10px;line-height:1.45}
+    .hint{
+      background:rgba(250,204,21,.12);
+      border:1px solid rgba(250,204,21,.26);
+      color:#fef3c7;
+      padding:12px 14px;
+      border-radius:16px;
+      line-height:1.4;
+      margin-top:12px;
+      display:none;
+    }
+    .hint.show{display:block}
+    .board-area{
+      background:var(--card);
+      border-radius:24px;
+      padding:14px;
+      color:#111827;
+      box-shadow:inset 0 0 0 1px rgba(0,0,0,.08);
+    }
+    .board-top{
+      display:flex;
+      justify-content:space-between;
+      gap:12px;
+      align-items:center;
+      margin-bottom:10px;
+      flex-wrap:wrap;
+    }
+    .tools{
+      display:flex;
+      align-items:center;
+      gap:8px;
+      flex-wrap:wrap;
+    }
+    .tool-label{font-size:13px;color:#475569;margin:0}
+    .color{
+      width:30px;height:30px;border-radius:50%;
+      border:3px solid transparent;
+      cursor:pointer;
+      box-shadow:0 2px 8px rgba(0,0,0,.25);
+    }
+    .color.active{border-color:#111827; transform:scale(1.05)}
+    .size{
+      width:92px;
+      accent-color:#7c3aed;
+    }
+    canvas{
+      width:100%;
+      height:520px;
+      display:block;
+      border:2px dashed #cbd5e1;
+      border-radius:18px;
+      background:
+        linear-gradient(#eef2f7 1px, transparent 1px),
+        linear-gradient(90deg, #eef2f7 1px, transparent 1px),
+        #fff;
+      background-size:28px 28px;
+      touch-action:none;
+      cursor:crosshair;
+    }
+    .side{
+      display:flex;
+      flex-direction:column;
+      gap:18px;
+    }
+    .answer-card{
+      background:rgba(17,24,39,.88);
+      border:1px solid rgba(255,255,255,.12);
+      border-radius:26px;
+      padding:16px;
+      box-shadow:0 20px 60px rgba(0,0,0,.30);
+    }
+    .answer-card h2{margin:0 0 10px;font-size:22px}
+    .answer-frame{
+      background:white;
+      color:#111827;
+      border-radius:20px;
+      padding:12px;
+      min-height:390px;
+      display:none;
+    }
+    .answer-frame.show{display:block}
+    .answer-frame svg{
+      width:100%;
+      height:360px;
+      display:block;
+      background:white;
+      border-radius:14px;
+      border:1px solid #e5e7eb;
+    }
+    .empty{
+      height:390px;
+      border:1px dashed rgba(255,255,255,.22);
+      border-radius:20px;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      text-align:center;
+      color:#cbd5e1;
+      padding:20px;
+      line-height:1.45;
+    }
+    .explain{
+      margin-top:10px;
+      color:#e5e7eb;
+      background:rgba(15,23,42,.65);
+      border-radius:16px;
+      padding:12px;
+      line-height:1.45;
+      display:none;
+    }
+    .explain.show{display:block}
+    .scoregrid{
+      display:grid;
+      grid-template-columns:repeat(3,1fr);
+      gap:10px;
+      margin-top:12px;
+    }
+    .scorebox{
+      background:rgba(15,23,42,.75);
+      border:1px solid rgba(255,255,255,.1);
+      border-radius:16px;
+      padding:12px;
+      text-align:center;
+    }
+    .scorebox b{font-size:24px;display:block}
+    .scorebox span{font-size:12px;color:#cbd5e1}
+    .modal{
+      position:fixed;inset:0;
+      background:rgba(2,6,23,.75);
+      display:none;
+      align-items:center;justify-content:center;
+      padding:18px;
+      z-index:10;
+    }
+    .modal.show{display:flex}
+    .modalbox{
+      max-width:720px;width:100%;
+      background:white;color:#111827;
+      border-radius:28px;
+      padding:22px;
+      box-shadow:0 30px 80px rgba(0,0,0,.45);
+    }
+    .modalbox h2{margin:0 0 10px;font-size:28px}
+    .modalbox p{line-height:1.5;color:#334155}
+    .rules{
+      display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin:14px 0;
+    }
+    .rule{
+      background:#f8fafc;border:1px solid #e5e7eb;border-radius:16px;padding:12px;
+    }
+    .footer-note{
+      color:#cbd5e1;
+      font-size:13px;
+      margin-top:18px;
+      text-align:center;
+    }
+    @media(max-width:980px){
+      .main{grid-template-columns:1fr}
+      .topbar{grid-template-columns:1fr 1fr}
+      canvas{height:430px}
+    }
+    @media(max-width:640px){
+      .wrap{padding:12px}
+      .topbar{grid-template-columns:1fr}
+      .qhead{flex-direction:column}
+      .rules{grid-template-columns:1fr}
+      canvas{height:390px}
+      .scoregrid{grid-template-columns:1fr}
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <section class="hero">
+      <h1>Игра «Нарисуй экономический график»</h1>
+      <p class="subtitle">
+        Выберите участника, дайте ему вопрос, он рисует график на электронной доске, затем нажимает «Проверить» — справа появляется правильный график для сравнения.
+      </p>
+    </section>
+
+    <section class="topbar">
+      <div class="box">
+        <label for="studentName">Участник у доски</label>
+        <input id="studentName" placeholder="Например: Диёрбек" />
+      </div>
+      <div class="box">
+        <label for="taskSelect">Задание</label>
+        <select id="taskSelect"></select>
+      </div>
+      <div class="box">
+        <label>Текущий статус</label>
+        <div class="badge" id="statusBadge">Ожидает выбора</div>
+      </div>
+      <div class="box">
+        <label>Управление игрой</label>
+        <div class="btnrow">
+          <button class="btn-green" id="startBtn">Старт</button>
+          <button class="btn-dark" id="randomBtn">Случайный график</button>
+        </div>
+      </div>
+    </section>
+
+    <section class="main">
+      <div class="question-card">
+        <div class="qhead">
+          <div>
+            <p class="question-title" id="questionTitle">Выберите задание</p>
+            <p class="question-text" id="questionText">Нажмите «Старт», затем участник должен нарисовать график на доске.</p>
+          </div>
+          <span class="badge" id="timerBadge">⏱ 00:00</span>
+        </div>
+
+        <div class="btnrow" style="margin-bottom:12px">
+          <button class="btn-warn" id="hintBtn">Подсказка</button>
+          <button class="btn-green" id="checkBtn">Проверить</button>
+          <button class="btn-red" id="clearBtn">Очистить доску</button>
+          <button class="btn-light" id="downloadBtn">Скачать рисунок</button>
+          <button class="btn-dark" id="nextBtn">Следующий график</button>
+        </div>
+
+        <div class="hint" id="hintBox"></div>
+
+        <div class="board-area">
+          <div class="board-top">
+            <div class="tools">
+              <span class="tool-label">Цвет:</span>
+              <button class="color active" data-color="#111827" style="background:#111827" title="Черный"></button>
+              <button class="color" data-color="#dc2626" style="background:#dc2626" title="Красный"></button>
+              <button class="color" data-color="#2563eb" style="background:#2563eb" title="Синий"></button>
+              <button class="color" data-color="#16a34a" style="background:#16a34a" title="Зеленый"></button>
+              <button class="color" data-color="#7c3aed" style="background:#7c3aed" title="Фиолетовый"></button>
+            </div>
+            <div class="tools">
+              <span class="tool-label">Толщина:</span>
+              <input class="size" id="sizeRange" type="range" min="2" max="16" value="4">
+              <button class="btn-light" id="eraserBtn">Ластик</button>
+              <button class="btn-light" id="axisBtn">Оси</button>
+            </div>
+          </div>
+          <canvas id="drawCanvas" width="900" height="560"></canvas>
+        </div>
+      </div>
+
+      <aside class="side">
+        <div class="answer-card">
+          <h2>Правильный график</h2>
+          <div id="emptyAnswer" class="empty">
+            Пока ответ скрыт. После рисунка нажмите «Проверить», чтобы открыть правильный график рядом.
+          </div>
+          <div id="answerFrame" class="answer-frame"></div>
+          <div id="explainBox" class="explain"></div>
+        </div>
+
+        <div class="answer-card">
+          <h2>Очки</h2>
+          <p style="color:#cbd5e1;margin:0">После сравнения преподаватель сам ставит баллы участнику.</p>
+          <div class="scoregrid">
+            <div class="scorebox"><b id="score">0</b><span>баллов</span></div>
+            <div class="scorebox"><b id="doneCount">0</b><span>проверено</span></div>
+            <div class="scorebox"><b id="playerName">—</b><span>участник</span></div>
+          </div>
+          <div class="btnrow" style="margin-top:12px">
+            <button class="btn-green" id="plusBtn">+1</button>
+            <button class="btn-warn" id="plus2Btn">+2</button>
+            <button class="btn-red" id="minusBtn">−1</button>
+            <button class="btn-dark" id="resetScoreBtn">Сброс</button>
+          </div>
+        </div>
+      </aside>
+    </section>
+
+    <p class="footer-note">Тема: регулирование конкурентного рынка. Графики: излишки, максимальная цена, минимальная цена, квота, налог.</p>
+  </div>
+
+  <div class="modal show" id="introModal">
+    <div class="modalbox">
+      <h2>Как играть</h2>
+      <p>1) Выберите участника. 2) Выберите вопрос или нажмите «Случайный график». 3) Участник рисует график на доске. 4) Нажмите «Проверить» — правильный график появится справа.</p>
+      <div class="rules">
+        <div class="rule"><b>Что оценивается:</b><br>оси, кривые D/S, равновесие, новые цены и количества.</div>
+        <div class="rule"><b>Для выступления:</b><br>участник должен объяснить, кто выигрывает, кто проигрывает и где чистые потери.</div>
+        <div class="rule"><b>Кнопка «Оси»:</b><br>быстро рисует базовую систему координат P–Q.</div>
+        <div class="rule"><b>Проверка:</b><br>автоматически показывает эталон, но баллы ставит преподаватель.</div>
+      </div>
+      <button id="closeIntro" class="btn-green">Начать игру</button>
+    </div>
+  </div>
+
+  <script>
+    const tasks = [
+      {
+        id:"consumer-surplus",
+        title:"1. Излишек потребителя",
+        question:"Нарисуйте график спроса и предложения. Покажите равновесие E, цену Pe, количество Qe и область потребительского излишка над ценой и под кривой спроса.",
+        hint:"Нужно: оси P и Q, нисходящая D, восходящая S, точка E, горизонталь Pe и заштрихованный треугольник потребительского излишка.",
+        explain:"Потребительский излишек — разница между максимальной ценой, которую покупатель готов заплатить, и фактической рыночной ценой. На графике это область под кривой спроса и выше равновесной цены.",
+        svg:`
+        <svg viewBox="0 0 520 360" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <marker id="arr1" markerWidth="10" markerHeight="10" refX="7" refY="3" orient="auto"><path d="M0,0 L0,6 L8,3 z" fill="#111827"/></marker>
+            <pattern id="shade1" width="8" height="8" patternUnits="userSpaceOnUse"><path d="M0,8 L8,0" stroke="#a78bfa" stroke-width="2"/></pattern>
+          </defs>
+          <rect width="520" height="360" fill="white"/>
+          <line x1="70" y1="305" x2="455" y2="305" stroke="#111827" stroke-width="3" marker-end="url(#arr1)"/>
+          <line x1="70" y1="305" x2="70" y2="45" stroke="#111827" stroke-width="3" marker-end="url(#arr1)"/>
+          <text x="460" y="310" font-size="18" font-weight="700">Q</text><text x="57" y="42" font-size="18" font-weight="700">P</text>
+          <polygon points="115,70 255,185 115,185" fill="url(#shade1)" stroke="#7c3aed" stroke-width="1"/>
+          <line x1="110" y1="70" x2="410" y2="305" stroke="#111827" stroke-width="4"/>
+          <line x1="135" y1="305" x2="330" y2="70" stroke="#111827" stroke-width="4"/>
+          <line x1="70" y1="185" x2="255" y2="185" stroke="#64748b" stroke-width="2" stroke-dasharray="7,5"/>
+          <line x1="255" y1="305" x2="255" y2="185" stroke="#64748b" stroke-width="2" stroke-dasharray="7,5"/>
+          <circle cx="255" cy="185" r="5" fill="#111827"/>
+          <text x="266" y="180" font-size="18" font-weight="700">E</text>
+          <text x="34" y="190" font-size="16">Pe</text><text x="246" y="331" font-size="16">Qe</text>
+          <text x="408" y="298" font-size="18" font-weight="700">D</text>
+          <text x="336" y="72" font-size="18" font-weight="700">S</text>
+          <text x="122" y="150" font-size="17" fill="#6d28d9" font-weight="700">CS</text>
+          <text x="112" y="335" font-size="14" fill="#475569">Область CS: под D и выше Pe</text>
+        </svg>`
+      },
+      {
+        id:"price-ceiling",
+        title:"2. Максимальная цена государства",
+        question:"Нарисуйте ситуацию, когда государство устанавливает максимальную цену ниже равновесной. Покажите Pmax, Pe, Q1, Qe, Q2, дефицит и чистые потери B+C.",
+        hint:"Pmax ниже Pe. При низкой цене спрос больше предложения: Q2 > Q1. Между Q1 и Q2 возникает дефицит. Объем фактических продаж ограничен Q1.",
+        explain:"Максимальная цена ниже равновесной снижает цену, но сокращает предложение. Часть потребителей не сможет купить товар. Чистые потери показываются треугольниками B и C.",
+        svg:`
+        <svg viewBox="0 0 520 360" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <marker id="arr2" markerWidth="10" markerHeight="10" refX="7" refY="3" orient="auto"><path d="M0,0 L0,6 L8,3 z" fill="#111827"/></marker>
+            <pattern id="shade2a" width="8" height="8" patternUnits="userSpaceOnUse"><path d="M0,8 L8,0" stroke="#93c5fd" stroke-width="2"/></pattern>
+            <pattern id="shade2b" width="7" height="7" patternUnits="userSpaceOnUse"><path d="M0,0 L7,7" stroke="#f87171" stroke-width="2"/></pattern>
+          </defs>
+          <rect width="520" height="360" fill="white"/>
+          <line x1="70" y1="305" x2="455" y2="305" stroke="#111827" stroke-width="3" marker-end="url(#arr2)"/>
+          <line x1="70" y1="305" x2="70" y2="45" stroke="#111827" stroke-width="3" marker-end="url(#arr2)"/>
+          <text x="460" y="310" font-size="18" font-weight="700">Q</text><text x="57" y="42" font-size="18" font-weight="700">P</text>
+          <line x1="110" y1="65" x2="410" y2="305" stroke="#111827" stroke-width="4"/>
+          <line x1="115" y1="305" x2="350" y2="70" stroke="#111827" stroke-width="4"/>
+          <text x="410" y="299" font-size="18" font-weight="700">D</text><text x="356" y="76" font-size="18" font-weight="700">S</text>
+          <line x1="70" y1="185" x2="255" y2="185" stroke="#64748b" stroke-width="2" stroke-dasharray="7,5"/>
+          <line x1="255" y1="305" x2="255" y2="185" stroke="#64748b" stroke-width="2" stroke-dasharray="7,5"/>
+          <circle cx="255" cy="185" r="5" fill="#111827"/><text x="266" y="180" font-size="18" font-weight="700">E</text>
+          <line x1="70" y1="250" x2="335" y2="250" stroke="#dc2626" stroke-width="3"/>
+          <line x1="170" y1="305" x2="170" y2="250" stroke="#64748b" stroke-width="2" stroke-dasharray="7,5"/>
+          <line x1="335" y1="305" x2="335" y2="250" stroke="#64748b" stroke-width="2" stroke-dasharray="7,5"/>
+          <rect x="70" y="185" width="100" height="65" fill="url(#shade2a)" opacity=".9" stroke="#2563eb"/>
+          <polygon points="170,250 255,185 200,220" fill="url(#shade2b)" stroke="#dc2626"/>
+          <polygon points="170,250 255,185 220,250" fill="url(#shade2b)" stroke="#dc2626"/>
+          <text x="105" y="220" font-size="17" fill="#2563eb" font-weight="700">A</text>
+          <text x="207" y="213" font-size="17" fill="#dc2626" font-weight="700">B</text>
+          <text x="195" y="244" font-size="17" fill="#dc2626" font-weight="700">C</text>
+          <text x="28" y="190" font-size="15">Pe</text><text x="18" y="255" font-size="15">Pmax</text>
+          <text x="160" y="331" font-size="15">Q1</text><text x="246" y="331" font-size="15">Qe</text><text x="325" y="331" font-size="15">Q2</text>
+          <line x1="170" y1="320" x2="335" y2="320" stroke="#ef4444" stroke-width="2" marker-start="url(#arr2)" marker-end="url(#arr2)"/>
+          <text x="215" y="348" font-size="15" fill="#dc2626" font-weight="700">дефицит</text>
+        </svg>`
+      },
+      {
+        id:"price-floor",
+        title:"3. Минимальная цена",
+        question:"Нарисуйте минимальную цену Pmin выше равновесной. Покажите Qd, Q0, Qs и излишек предложения: производители хотят продать больше, чем покупатели готовы купить.",
+        hint:"Pmin выше P0. При высокой цене предложение больше спроса: Qs > Qd. Возникает избыток/нереализованная продукция.",
+        explain:"Минимальная цена выше равновесия увеличивает цену, но снижает спрос. Если производители выпускают Qs, часть продукции остается непроданной.",
+        svg:`
+        <svg viewBox="0 0 520 360" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <marker id="arr3" markerWidth="10" markerHeight="10" refX="7" refY="3" orient="auto"><path d="M0,0 L0,6 L8,3 z" fill="#111827"/></marker>
+            <pattern id="shade3" width="8" height="8" patternUnits="userSpaceOnUse"><path d="M0,8 L8,0" stroke="#a78bfa" stroke-width="2"/></pattern>
+            <pattern id="shade3d" width="8" height="8" patternUnits="userSpaceOnUse"><circle cx="2" cy="2" r="1.4" fill="#f59e0b"/></pattern>
+          </defs>
+          <rect width="520" height="360" fill="white"/>
+          <line x1="70" y1="305" x2="455" y2="305" stroke="#111827" stroke-width="3" marker-end="url(#arr3)"/>
+          <line x1="70" y1="305" x2="70" y2="45" stroke="#111827" stroke-width="3" marker-end="url(#arr3)"/>
+          <text x="460" y="310" font-size="18" font-weight="700">Q</text><text x="57" y="42" font-size="18" font-weight="700">P</text>
+          <line x1="110" y1="65" x2="410" y2="305" stroke="#111827" stroke-width="4"/>
+          <line x1="115" y1="305" x2="350" y2="70" stroke="#111827" stroke-width="4"/>
+          <text x="410" y="299" font-size="18" font-weight="700">D</text><text x="356" y="76" font-size="18" font-weight="700">S</text>
+          <line x1="70" y1="185" x2="255" y2="185" stroke="#64748b" stroke-width="2" stroke-dasharray="7,5"/>
+          <line x1="255" y1="305" x2="255" y2="185" stroke="#64748b" stroke-width="2" stroke-dasharray="7,5"/>
+          <circle cx="255" cy="185" r="5" fill="#111827"/><text x="265" y="181" font-size="18" font-weight="700">E</text>
+          <line x1="70" y1="120" x2="400" y2="120" stroke="#7c3aed" stroke-width="3"/>
+          <line x1="180" y1="305" x2="180" y2="120" stroke="#64748b" stroke-width="2" stroke-dasharray="7,5"/>
+          <line x1="315" y1="305" x2="315" y2="120" stroke="#64748b" stroke-width="2" stroke-dasharray="7,5"/>
+          <rect x="70" y="120" width="110" height="65" fill="url(#shade3)" opacity=".85" stroke="#7c3aed"/>
+          <polygon points="180,120 255,185 205,185" fill="#fecaca" opacity=".9" stroke="#ef4444"/>
+          <polygon points="255,185 315,120 315,275 230,215" fill="url(#shade3d)" stroke="#f59e0b"/>
+          <text x="112" y="156" font-size="17" fill="#6d28d9" font-weight="700">A</text>
+          <text x="210" y="166" font-size="17" fill="#dc2626" font-weight="700">B</text>
+          <text x="292" y="230" font-size="17" fill="#d97706" font-weight="700">D</text>
+          <text x="17" y="125" font-size="15">Pmin</text><text x="34" y="190" font-size="15">P0</text>
+          <text x="166" y="331" font-size="15">Qd</text><text x="246" y="331" font-size="15">Q0</text><text x="306" y="331" font-size="15">Qs</text>
+          <line x1="180" y1="330" x2="315" y2="330" stroke="#f59e0b" stroke-width="2" marker-start="url(#arr3)" marker-end="url(#arr3)"/>
+          <text x="202" y="351" font-size="15" fill="#d97706" font-weight="700">избыток</text>
+        </svg>`
+      },
+      {
+        id:"quota",
+        title:"4. Квота производства",
+        question:"Нарисуйте квоту: государство ограничивает выпуск на уровне Q1. Покажите вертикальную линию S′, новую цену Ps, прежнее равновесие P0/Q0 и чистые потери B+C.",
+        hint:"Квота делает предложение вертикальным на Q1. Так как товара меньше, цена поднимается до Ps. Потребители теряют A+B, производители получают A, но теряют C.",
+        explain:"При квоте объем выпуска искусственно ограничивается. Цена растет, часть потребителей уходит с рынка, а общество теряет треугольники B и C.",
+        svg:`
+        <svg viewBox="0 0 520 360" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <marker id="arr4" markerWidth="10" markerHeight="10" refX="7" refY="3" orient="auto"><path d="M0,0 L0,6 L8,3 z" fill="#111827"/></marker>
+            <pattern id="shade4" width="8" height="8" patternUnits="userSpaceOnUse"><path d="M0,8 L8,0" stroke="#60a5fa" stroke-width="2"/></pattern>
+          </defs>
+          <rect width="520" height="360" fill="white"/>
+          <line x1="70" y1="305" x2="455" y2="305" stroke="#111827" stroke-width="3" marker-end="url(#arr4)"/>
+          <line x1="70" y1="305" x2="70" y2="45" stroke="#111827" stroke-width="3" marker-end="url(#arr4)"/>
+          <text x="460" y="310" font-size="18" font-weight="700">Q</text><text x="57" y="42" font-size="18" font-weight="700">P</text>
+          <line x1="110" y1="65" x2="410" y2="305" stroke="#111827" stroke-width="4"/>
+          <line x1="115" y1="305" x2="350" y2="70" stroke="#111827" stroke-width="4"/>
+          <line x1="185" y1="285" x2="185" y2="70" stroke="#111827" stroke-width="5"/>
+          <text x="410" y="299" font-size="18" font-weight="700">D</text><text x="356" y="76" font-size="18" font-weight="700">S</text><text x="192" y="78" font-size="18" font-weight="700">S′</text>
+          <line x1="70" y1="245" x2="185" y2="245" stroke="#64748b" stroke-width="2" stroke-dasharray="7,5"/>
+          <line x1="70" y1="185" x2="255" y2="185" stroke="#64748b" stroke-width="2" stroke-dasharray="7,5"/>
+          <line x1="255" y1="305" x2="255" y2="185" stroke="#64748b" stroke-width="2" stroke-dasharray="7,5"/>
+          <line x1="185" y1="305" x2="185" y2="125" stroke="#64748b" stroke-width="2" stroke-dasharray="7,5"/>
+          <circle cx="255" cy="185" r="5" fill="#111827"/><text x="265" y="181" font-size="18" font-weight="700">E0</text>
+          <circle cx="185" cy="125" r="5" fill="#111827"/><text x="195" y="120" font-size="18" font-weight="700">E1</text>
+          <line x1="70" y1="125" x2="185" y2="125" stroke="#7c3aed" stroke-width="3"/>
+          <rect x="70" y="125" width="115" height="60" fill="url(#shade4)" opacity=".8" stroke="#2563eb"/>
+          <polygon points="185,125 255,185 185,185" fill="#fecaca" opacity=".9" stroke="#ef4444"/>
+          <polygon points="185,185 255,185 185,245" fill="#fecaca" opacity=".9" stroke="#ef4444"/>
+          <text x="115" y="160" font-size="17" fill="#2563eb" font-weight="700">A</text>
+          <text x="204" y="170" font-size="17" fill="#dc2626" font-weight="700">B</text>
+          <text x="203" y="212" font-size="17" fill="#dc2626" font-weight="700">C</text>
+          <text x="36" y="130" font-size="15">Ps</text><text x="34" y="190" font-size="15">P0</text>
+          <text x="176" y="331" font-size="15">Q1</text><text x="246" y="331" font-size="15">Q0</text>
+          <text x="98" y="342" font-size="14" fill="#475569">Квота: выпуск ограничен на Q1</text>
+        </svg>`
+      },
+      {
+        id:"tax",
+        title:"5. Потоварный налог",
+        question:"Нарисуйте влияние налога на рынок: кривая предложения смещается вверх с S1 до S2 = S1 + t. Покажите рост цены P1→P2 и сокращение количества Q1→Q2.",
+        hint:"Налог увеличивает издержки продавцов, поэтому предложение сдвигается вверх/влево. Новое равновесие: цена для потребителя выше, общий объем продаж ниже.",
+        explain:"Потоварный налог повышает переменные издержки. Рыночное предложение смещается вверх, равновесная цена растет с P1 до P2, а количество снижается с Q1 до Q2.",
+        svg:`
+        <svg viewBox="0 0 520 360" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <marker id="arr5" markerWidth="10" markerHeight="10" refX="7" refY="3" orient="auto"><path d="M0,0 L0,6 L8,3 z" fill="#111827"/></marker>
+          </defs>
+          <rect width="520" height="360" fill="white"/>
+          <line x1="70" y1="305" x2="455" y2="305" stroke="#111827" stroke-width="3" marker-end="url(#arr5)"/>
+          <line x1="70" y1="305" x2="70" y2="45" stroke="#111827" stroke-width="3" marker-end="url(#arr5)"/>
+          <text x="460" y="310" font-size="18" font-weight="700">Q</text><text x="57" y="42" font-size="18" font-weight="700">P</text>
+          <line x1="125" y1="70" x2="420" y2="305" stroke="#111827" stroke-width="4"/>
+          <line x1="120" y1="305" x2="360" y2="80" stroke="#111827" stroke-width="4"/>
+          <line x1="100" y1="275" x2="330" y2="65" stroke="#7c3aed" stroke-width="4"/>
+          <text x="422" y="299" font-size="18" font-weight="700">D</text>
+          <text x="365" y="84" font-size="18" font-weight="700">S1</text>
+          <text x="335" y="68" font-size="18" fill="#6d28d9" font-weight="700">S2=S1+t</text>
+          <circle cx="260" cy="175" r="5" fill="#111827"/>
+          <circle cx="220" cy="145" r="5" fill="#6d28d9"/>
+          <text x="268" y="174" font-size="17" font-weight="700">E1</text>
+          <text x="228" y="140" font-size="17" fill="#6d28d9" font-weight="700">E2</text>
+          <line x1="70" y1="175" x2="260" y2="175" stroke="#64748b" stroke-width="2" stroke-dasharray="7,5"/>
+          <line x1="70" y1="145" x2="220" y2="145" stroke="#64748b" stroke-width="2" stroke-dasharray="7,5"/>
+          <line x1="260" y1="305" x2="260" y2="175" stroke="#64748b" stroke-width="2" stroke-dasharray="7,5"/>
+          <line x1="220" y1="305" x2="220" y2="145" stroke="#64748b" stroke-width="2" stroke-dasharray="7,5"/>
+          <line x1="330" y1="110" x2="360" y2="83" stroke="#ef4444" stroke-width="3" marker-end="url(#arr5)"/>
+          <text x="363" y="110" font-size="16" fill="#dc2626" font-weight="700">налог t</text>
+          <text x="36" y="180" font-size="15">P1</text><text x="36" y="150" font-size="15">P2</text>
+          <text x="211" y="331" font-size="15">Q2</text><text x="251" y="331" font-size="15">Q1</text>
+          <text x="105" y="342" font-size="14" fill="#475569">Цена растет, количество сокращается</text>
+        </svg>`
+      }
+    ];
+
+    const canvas = document.getElementById('drawCanvas');
+    const ctx = canvas.getContext('2d');
+    const taskSelect = document.getElementById('taskSelect');
+    const qTitle = document.getElementById('questionTitle');
+    const qText = document.getElementById('questionText');
+    const hintBox = document.getElementById('hintBox');
+    const answerFrame = document.getElementById('answerFrame');
+    const emptyAnswer = document.getElementById('emptyAnswer');
+    const explainBox = document.getElementById('explainBox');
+    const statusBadge = document.getElementById('statusBadge');
+    const timerBadge = document.getElementById('timerBadge');
+    const studentName = document.getElementById('studentName');
+    const playerName = document.getElementById('playerName');
+    const scoreEl = document.getElementById('score');
+    const doneCountEl = document.getElementById('doneCount');
+
+    let currentTask = tasks[0];
+    let drawing = false;
+    let color = '#111827';
+    let size = 4;
+    let eraser = false;
+    let score = 0;
+    let doneCount = 0;
+    let seconds = 0;
+    let timer = null;
+
+    tasks.forEach((t, i)=>{
+      const opt = document.createElement('option');
+      opt.value = i;
+      opt.textContent = t.title;
+      taskSelect.appendChild(opt);
+    });
+
+    function resizeBackingStore(){
+      const rect = canvas.getBoundingClientRect();
+      const ratio = window.devicePixelRatio || 1;
+      const img = ctx.getImageData(0,0,canvas.width,canvas.height);
+      canvas.width = Math.round(rect.width * ratio);
+      canvas.height = Math.round(rect.height * ratio);
+      ctx.scale(ratio, ratio);
+      clearBoard();
+    }
+
+    function getPos(e){
+      const rect = canvas.getBoundingClientRect();
+      const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+      const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+      return {x: clientX - rect.left, y: clientY - rect.top};
+    }
+
+    function startDraw(e){
+      drawing = true;
+      const p = getPos(e);
+      ctx.beginPath();
+      ctx.moveTo(p.x, p.y);
+      e.preventDefault();
+    }
+
+    function draw(e){
+      if(!drawing) return;
+      const p = getPos(e);
+      ctx.lineCap = 'round';
+      ctx.lineJoin = 'round';
+      ctx.lineWidth = eraser ? 22 : size;
+      ctx.strokeStyle = eraser ? '#ffffff' : color;
+      ctx.lineTo(p.x, p.y);
+      ctx.stroke();
+      e.preventDefault();
+    }
+
+    function stopDraw(){ drawing = false; }
+
+    function clearBoard(){
+      const rect = canvas.getBoundingClientRect();
+      ctx.clearRect(0,0,rect.width,rect.height);
+      ctx.fillStyle = '#ffffff00';
+      ctx.fillRect(0,0,rect.width,rect.height);
+    }
+
+    function drawAxes(){
+      const rect = canvas.getBoundingClientRect();
+      const w = rect.width, h = rect.height;
+      ctx.save();
+      ctx.strokeStyle = '#111827';
+      ctx.fillStyle = '#111827';
+      ctx.lineWidth = 3;
+      ctx.lineCap = 'round';
+      const ox = 70, oy = h - 60;
+      ctx.beginPath();
+      ctx.moveTo(ox, oy);
+      ctx.lineTo(w - 45, oy);
+      ctx.moveTo(ox, oy);
+      ctx.lineTo(ox, 45);
+      ctx.stroke();
+      // arrow heads
+      ctx.beginPath();
+      ctx.moveTo(w-45, oy); ctx.lineTo(w-58, oy-7); ctx.lineTo(w-58, oy+7); ctx.closePath(); ctx.fill();
+      ctx.beginPath();
+      ctx.moveTo(ox, 45); ctx.lineTo(ox-7, 58); ctx.lineTo(ox+7, 58); ctx.closePath(); ctx.fill();
+      ctx.font = 'bold 20px Arial';
+      ctx.fillText('Q', w-33, oy+6);
+      ctx.fillText('P', ox-18, 38);
+      ctx.restore();
+    }
+
+    function loadTask(index){
+      currentTask = tasks[index];
+      qTitle.textContent = currentTask.title;
+      qText.textContent = currentTask.question;
+      hintBox.textContent = currentTask.hint;
+      hintBox.classList.remove('show');
+      answerFrame.classList.remove('show');
+      answerFrame.innerHTML = '';
+      explainBox.classList.remove('show');
+      explainBox.textContent = '';
+      emptyAnswer.style.display = 'flex';
+      clearBoard();
+      statusBadge.textContent = 'Задание выбрано';
+    }
+
+    function startGame(){
+      const idx = Number(taskSelect.value);
+      loadTask(idx);
+      const name = studentName.value.trim() || 'Участник';
+      playerName.textContent = name.length > 9 ? name.slice(0,9)+'…' : name;
+      statusBadge.textContent = name + ' рисует';
+      seconds = 0;
+      clearInterval(timer);
+      timer = setInterval(()=>{
+        seconds++;
+        const m = String(Math.floor(seconds/60)).padStart(2,'0');
+        const s = String(seconds%60).padStart(2,'0');
+        timerBadge.textContent = '⏱ ' + m + ':' + s;
+      },1000);
+    }
+
+    function checkAnswer(){
+      answerFrame.innerHTML = currentTask.svg;
+      answerFrame.classList.add('show');
+      emptyAnswer.style.display = 'none';
+      explainBox.textContent = currentTask.explain;
+      explainBox.classList.add('show');
+      statusBadge.textContent = 'Ответ открыт';
+      doneCount++;
+      doneCountEl.textContent = doneCount;
+    }
+
+    function nextTask(){
+      let idx = Number(taskSelect.value);
+      idx = (idx + 1) % tasks.length;
+      taskSelect.value = idx;
+      loadTask(idx);
+      statusBadge.textContent = 'Следующий график';
+    }
+
+    function randomTask(){
+      const idx = Math.floor(Math.random()*tasks.length);
+      taskSelect.value = idx;
+      loadTask(idx);
+      statusBadge.textContent = 'Случайный график';
+    }
+
+    function downloadDrawing(){
+      const link = document.createElement('a');
+      const name = (studentName.value.trim() || 'participant').replace(/[^\wа-яё-]+/gi,'_');
+      link.download = `drawing_${name}_${currentTask.id}.png`;
+      link.href = canvas.toDataURL('image/png');
+      link.click();
+    }
+
+    canvas.addEventListener('mousedown', startDraw);
+    canvas.addEventListener('mousemove', draw);
+    canvas.addEventListener('mouseup', stopDraw);
+    canvas.addEventListener('mouseleave', stopDraw);
+    canvas.addEventListener('touchstart', startDraw, {passive:false});
+    canvas.addEventListener('touchmove', draw, {passive:false});
+    canvas.addEventListener('touchend', stopDraw);
+
+    document.querySelectorAll('.color').forEach(btn=>{
+      btn.addEventListener('click', ()=>{
+        document.querySelectorAll('.color').forEach(b=>b.classList.remove('active'));
+        btn.classList.add('active');
+        color = btn.dataset.color;
+        eraser = false;
+        document.getElementById('eraserBtn').textContent = 'Ластик';
+      });
+    });
+
+    document.getElementById('sizeRange').addEventListener('input', e=> size = Number(e.target.value));
+    document.getElementById('eraserBtn').addEventListener('click', ()=>{
+      eraser = !eraser;
+      document.getElementById('eraserBtn').textContent = eraser ? 'Карандаш' : 'Ластик';
+    });
+    document.getElementById('axisBtn').addEventListener('click', drawAxes);
+    document.getElementById('clearBtn').addEventListener('click', clearBoard);
+    document.getElementById('startBtn').addEventListener('click', startGame);
+    document.getElementById('checkBtn').addEventListener('click', checkAnswer);
+    document.getElementById('nextBtn').addEventListener('click', nextTask);
+    document.getElementById('randomBtn').addEventListener('click', randomTask);
+    document.getElementById('hintBtn').addEventListener('click', ()=>hintBox.classList.toggle('show'));
+    document.getElementById('downloadBtn').addEventListener('click', downloadDrawing);
+    document.getElementById('plusBtn').addEventListener('click', ()=>{score++; scoreEl.textContent=score;});
+    document.getElementById('plus2Btn').addEventListener('click', ()=>{score+=2; scoreEl.textContent=score;});
+    document.getElementById('minusBtn').addEventListener('click', ()=>{score--; scoreEl.textContent=score;});
+    document.getElementById('resetScoreBtn').addEventListener('click', ()=>{score=0;doneCount=0;scoreEl.textContent=0;doneCountEl.textContent=0;});
+    document.getElementById('closeIntro').addEventListener('click', ()=>document.getElementById('introModal').classList.remove('show'));
+    taskSelect.addEventListener('change', e=>loadTask(Number(e.target.value)));
+
+    window.addEventListener('resize', ()=>{
+      // keep simple and clean after resize
+      clearBoard();
+    });
+
+    loadTask(0);
+    setTimeout(drawAxes, 200);
+  </script>
+</body>
+</html>
